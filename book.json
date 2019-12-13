@@ -29,16 +29,16 @@
         "modify_format": "YYYY-MM-DD HH:mm:ss"
        },
        "github": {
-        "url": "https://github.com/jcharden"
+        "url": "https://github.com/jumormt"
        },
        "sitemap-general": {
-        "prefix": "https://jcharden.github.io/"
+        "prefix": "https://jumormt.github.io/"
       },
        "github-buttons": {
         "buttons": [
           {
-            "user": "jcharden",
-            "repo": "jcharden.github.io",
+            "user": "jumormt",
+            "repo": "jumormt.github.io",
             "type": "star",
             "size": "small",
             "count": true
@@ -125,7 +125,7 @@
     "language": "zh-hans",
     "links": {
       "sidebar": {
-        "GitHub": "https://github.com/jcharden"
+        "GitHub": "https://github.com/jumormt"
       }
     }
 }
