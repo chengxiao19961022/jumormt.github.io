@@ -797,3 +797,82 @@ redis事务具有以下特点：
 所谓 Redis 的并发竞争 Key 的问题也就是多个系统同时对一个 key 进行操作，但是最后执行的顺序和我们期望的顺序不同，这样也就导致了结果的不同！
 
 推荐一种方案：分布式锁（zookeeper 和 redis 都可以实现分布式锁）。（如果不存在 Redis 的并发竞争 Key 问题，不要使用分布式锁，这样会影响性能）
+
+### Redis复制
+
+#### 单机有什么问题
+
+- 机器故障 ：机器故障，导致数据损坏，服务无法提供。
+- 容量瓶颈 ：16G内存，redis需要12G，是否需要购买一个128G内存的？
+- QPS瓶颈： 10万QPS，需求为100万QPS？怎么解决？
+
+#### 复制原理
+
+- runid
+  redis每次启动的时候都会有一个随机的id来保障redis的标识，重启后消失。
+- 偏移量
+ 一个数据写入量的字节，记录写了多少数据。主服务器会把偏移量同步给从服务器，当主从的偏移量一致，则数据是完全同步的。
+如果主从服务的偏移量大于从服务器，则主从不同步
+
+- 全量复制
+  ![image.png](https://i.loli.net/2020/01/06/fjCMIcNwazo5rS6.png)
+- 部分复制
+  - redis 2.8后的功能，当网络发生抖动断开后，会用到部分复制的功能
+  - 当网络发生抖动，slave会与master断开
+  - master 写命令时，会写一份复制缓冲区的命令
+  - 当slave在此连接master时 ，传递命令 psync {offset} {runid} ,告诉 master 自己当前的偏移量是多少
+  - master 向 slave 返回CONTINUE 把 缺失的内容 传递过去。
+
+#### 故障处理
+
+![image.png](https://i.loli.net/2020/01/06/dzb4PHSmDWCUs25.png)
+
+#### 常见问题
+
+- 读写分离
+
+  ![image.png](https://i.loli.net/2020/01/06/3OutpErJigKlIYq.png)
+
+- 主从配置不一致
+
+  ![image.png](https://i.loli.net/2020/01/06/z2LlQKwG5NPMoje.png)
+
+- 规避全量复制
+
+  ![image.png](https://i.loli.net/2020/01/06/iaWAK9lt67y1EFb.png)
+
+- 规避复制风暴
+
+  ![image.png](https://i.loli.net/2020/01/06/xRsLtD24heCH3Wk.png)
+
+### Redis sentinel
+
+#### 主从复制高可用
+
+- 主从复制问题
+	-	手动故障转移
+  - 写能力和存储能力受限
+
+redis sentinel可以实现故障的自动转移
+
+#### Redis sentinel架构
+
+![image.png](https://i.loli.net/2020/01/06/8VH2SclwaKt1JF3.png)
+
+#### Redis sentinel故障转移
+
+![image.png](https://i.loli.net/2020/01/06/KP9TYAnQkHhS8oi.png)
+
+#### 三个定时任务
+
+- 每10s每个sentinel对master和slave执行info
+	发现slave节点
+  确认主从关系
+  ![image.png](https://i.loli.net/2020/01/06/r4HjTBsEzqoGkbX.png)
+- 每2s每个sentinel通过master节点的channel交换信息（pub/sub）
+	通过__sentinel__:hello频道交互
+	交互对节点的“看法”和自身信息
+  ![image.png](https://i.loli.net/2020/01/06/1Zh3idWXgwenbU9.png)
+- 每1s每个sentinel对其他sentinel和redis执行ping（前两个是第三个的基础）
+  心跳检测，失败判定的依据
+  ![image.png](https://i.loli.net/2020/01/06/uxgRvp4AWbyh9Bf.png)
